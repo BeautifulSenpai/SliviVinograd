@@ -34,7 +34,7 @@ namespace WpfApp1
         private int currentQuestionIndex;
         private int correctAnswers;
         private TaskbarIcon taskbarIcon;
-        private string uid;
+        private string UidClient;
         private string subject;
         private int grade;
 
@@ -84,12 +84,12 @@ namespace WpfApp1
                 });
             };
             socket.On("uid", response => OnUidReceived(response));
-            socket.On("action", response => OnActionReceived(response));
+            //socket.On("action", response => OnActionReceived(response));
             socket.On("time-received", (response) => OnTimeReceived(response));
             socket.On("stop-timer", (response) => OnStopTimeReceived(response));
             socket.On("continue-work", (response) => OnContinueWorkReceived(response));
             socket.On("finish-work", (response) => OnFinishWorkReceived(response));
-            socket.On("selected-subject-and-class", (response) => OnSubjectAndClassReceived(response));
+            //socket.On("selected-subject-and-class", (response) => OnSubjectAndClassReceived(response));
         }
 
         private void Socket_OnConnected(object sender, EventArgs e)
@@ -115,7 +115,6 @@ namespace WpfApp1
         private void OnTimeReceived(SocketIOClient.SocketIOResponse response)
         {
 
-
             Console.WriteLine("OnTimeReceived: " + response);
 
             var timeResponse = JsonConvert.DeserializeObject<TimeResponse[]>(response.ToString());
@@ -123,11 +122,23 @@ namespace WpfApp1
             if (timeResponse != null && timeResponse.Length > 0)
             {
                 int timeInSeconds = timeResponse[0].timeInSeconds;
+                string uid = timeResponse[0].uid;
+
                 Console.WriteLine("TimeInSeconds: " + timeInSeconds);
-                Dispatcher.Invoke(() =>
+
+                if(uid == UidClient)
                 {
-                    StartTimer(timeInSeconds);
-                });
+                    Dispatcher.Invoke(() =>
+                    {
+                        StartTimer(timeInSeconds);
+                    });
+                }
+                else
+                {
+                    Console.WriteLine("UID не соответствует");
+                }
+
+                
             }
             else
             {
@@ -168,9 +179,9 @@ namespace WpfApp1
 
         private void OnUidReceived(SocketIOResponse response)
         {
-            uid = response.GetValue<string>();
-            Console.WriteLine("Received uid: " + uid);
-            Dispatcher.Invoke(() => UidTextBox.Text = uid);
+            UidClient = response.GetValue<string>();
+            Console.WriteLine("Received uid: " + UidClient);
+            Dispatcher.Invoke(() => UidTextBox.Text = UidClient);
         }
 
         private void OnActionReceived(SocketIOResponse response)
@@ -507,7 +518,7 @@ namespace WpfApp1
 
         private async void PackIcon_MouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
-            Clipboard.SetText(uid);
+            Clipboard.SetText(UidClient);
             copiedTextBlock.Visibility = Visibility.Visible;
             await Task.Delay(1000);
             copiedTextBlock.Visibility = Visibility.Collapsed;
